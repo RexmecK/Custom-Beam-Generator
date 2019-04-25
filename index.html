@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Rexmeck Custom Beam Generator</title>
+        <style>
+            .default-font {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 0.5cm;
+                font-weight:lighter;
+            }
+            
+            .default-button {
+                color: #111; 
+                border: 2px solid #888; 
+                border-radius: 4px; 
+                background-color: #eee;
+            }
+
+            body {
+              height: 100vh;
+              margin: 0;
+              background-color: #000; 
+              padding: 0;
+              position: relative;
+            }
+
+            .header {
+                overflow: hidden;
+                background-color: #202020;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 100%;
+                max-height: 8cm;
+                z-index: 99;
+            }
+
+            #generating {
+                display: none;
+            }
+            .middle-align {
+                overflow: hidden;
+                max-width: 960px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+            
+            .shadow {
+                box-shadow: 0px 20px 20px 0px #00000040;
+            }
+
+            .imgbg {
+              background-color: #444;
+              overflow: hidden;
+              background-size: 50px 50px;
+              background-position: 0 0, 25px 25px;
+              background-image: linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%, #888),
+                                linear-gradient(45deg, #888 25%, transparent 25%, transparent 75%, #888 75%, #888);
+            }
+
+        </style>
+    </head>
+    
+    <body>
+        <div class="header shadow">
+            <h1 align="center" class="default-font" style="font-size: 1cm; color:#808080; margin-top: 15px;">Rexmeck Custom Beam Generator</h1>
+        </div>
+        <!--Main page-->
+        <div class="middle-align shadow" style="margin-top: 30px; padding-top: 30px; padding-bottom: 30px; background-color: #fafafa; min-width: 120px;">
+            <div style="padding-left: 3.5%; padding-right: 5%;">
+                <label class="default-font">Input: </label>
+                <br>
+                <button name="generate" onclick="generate()" class="default-button">Generate</button>
+                <input type="file" id="input" accept="image/*" class="default-button">
+                <label id="generating" class="default-font" >Generating...</label>
+                <br>
+                <br>
+                <label class="default-font">Output: </label>
+                <br>
+                <br>
+                <textarea id="output" wrap="soft" spellcheck="false" style="max-width:100%; min-width: 100%; height: 250px; resize: vertical;"> </textarea>
+            </div>
+        </div>
+        
+        <div class="middle-align shadow" style="margin-top: 30px; padding-top: 30px; padding-bottom: 30px; background-color: #fafafa; min-width: 120px;">
+            <div style="padding-left: 3.5%; padding-right: 5%;">
+                <h1 align="center" class="default-font">template.png</h1>
+                <br>
+                <br>
+                <div class="imgbg"style="outline:solid #888 1px;">
+                    <img src="template.png" >
+                </div>
+            </div>
+        </div>
+    </body>
+    
+    <script>
+        var ready = true
+
+        //Util credits from people on stackoverflow
+        function componentToHex(c) {
+            var hex = c.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+        
+        function hexEnd0(v) {
+            for(var i=0;i<16;i++){
+                if(v == i * 17) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function rgbaToHex(r, g, b, a) {
+            //very bad coding here
+            r = Math.min(r,255);
+            g = Math.min(g,255);
+            b = Math.min(b,255);
+            a = Math.min(a,255);
+
+            if(a == 0 && !document.getElementById("ctrans").checked) {
+                return "0000";
+            }
+
+            if(hexEnd0(r) && hexEnd0(g) && hexEnd0(b)) {
+                if (a == 255) {
+                    return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1);
+                }
+                else{
+                    if(hexEnd0(a)){
+                        return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1) + componentToHex(a).substring(0, 1);
+                    }
+                }
+            }
+            if(a == 255){
+                return componentToHex(r) + componentToHex(g) + componentToHex(b)
+            }
+            return componentToHex(r) + componentToHex(g) + componentToHex(b) + componentToHex(a);
+        }
+
+        function rgbaToHexNoTransparentCheck(r, g, b, a) {
+            r = Math.min(r,255);
+            g = Math.min(g,255);
+            b = Math.min(b,255);
+            a = Math.min(a,255);
+            if(hexEnd0(r) && hexEnd0(g) && hexEnd0(b)) {
+                if (a == 255) {
+                    return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1);
+                }
+                else{
+                    if(hexEnd0(a)){
+                        return componentToHex(r).substring(0, 1) + componentToHex(g).substring(0, 1) + componentToHex(b).substring(0, 1) + componentToHex(a).substring(0, 1);
+                    }
+                }
+            }
+
+            if(a == 255){
+                return componentToHex(r) + componentToHex(g) + componentToHex(b)
+            }
+            return componentToHex(r) + componentToHex(g) + componentToHex(b) + componentToHex(a);
+        }
+        //
+
+        //button callback
+        function generate(){
+            let outputText = document.getElementById("output");
+            let generatingtext = document.getElementById("generating");
+            outputText.value = "";
+
+            generatingtext.style.display = "initial";
+            
+            if (ready && document.getElementById("input").files.length == 1) {
+                ready = false
+                let reader = new FileReader();
+                let f = document.getElementById("input").files[0];
+                reader.onload = function(a) 
+                {
+                    let img = new Image;
+                    img.onload = function() { 
+                        if (img.width == 860 && img.height == 129)
+                        {
+                            document.getElementById("output").value = drawCustom(img); 
+                        }
+                        generatingtext.style.display = "none";
+                        ready = true;
+                    };
+                    img.src = a.target.result;
+                };
+                reader.readAsDataURL(f);
+            }
+            else
+            {
+                generatingtext.style.display = "none";
+            }
+        }
+
+        function drawIndex(image, frameSize, greenIndex, indexPosition){
+            let offset = [frameSize[0] * indexPosition[0], frameSize[1] * indexPosition[1]];
+            
+            let palletes = "";
+
+            for(let x = 1; x <= frameSize[0] + 1; x++)
+            {
+                for(let y = 1; y <= frameSize[1] + 1; y++)
+                {
+                    let ssx = offset[0] + x - 1;
+                    let ssy = offset[1] + frameSize[1] - y;
+                    let pix = context2d.getImageData(ssx, ssy, 1, 1).data;
+                    if (pix[3] > 0){ 
+                        palletes += ";" + rgbaToHexNoTransparentCheck(x - 1, greenIndex, y - 1,0) + "=" + rgbaToHex(pix[0], pix[1], pix[2], pix[3]);
+                    }
+                    else{
+                    }
+                }
+            }
+
+            return palletes;
+        }
+
+        var FrameGreenIndex = { //index starts from top left
+            "01" : [0,0],
+            "02" : [1,0],
+            "03" : [2,0],
+            "04" : [3,0],
+            //"05" : [4,0],
+            "06" : [5,0],
+            "07" : [6,0],
+            //"08" : [7,0],
+            "09" : [8,0],
+            "10" : [9,0],
+            "11" : [10,0],
+            "12" : [11,0],
+            "13" : [12,0],
+            //"14" : [0,1],
+            "15" : [1,1],
+            //"16" : [2,1],
+            "17" : [3,1],
+            "18" : [4,1],
+            "19" : [5,1],
+            "20" : [6,1],
+            "21" : [7,1],
+            "22" : [8,1],
+            "23" : [9,1],
+            "24" : [10,1],
+            "25" : [11,1],
+            "26" : [12,1],
+            "27" : [0,2],
+            "28" : [1,2],
+            "29" : [2,2],
+        }
+
+        function drawCustom(image) {
+            let img = document.createElement('canvas');
+            img.width = image.width + 2;
+            img.height = image.height + 2;
+            context2d = img.getContext('2d');
+            context2d.drawImage(image, 0,0);
+            let directives = "?replace;fff0=0f00;0000=f000;feffff=Ff04?scalebicubic=0.2401?scalebicubic=0.2401?scale=1.125?crop;1;0;2;1?replace;EAD8184F=00a000a1;D9F91C52=00a000a2;7ADEC2C4=00a000a3;DEFB1149=00a000a4;0000=00a000a5;DEFC0841=00a000a6;DEFC0843=00a000a7;0000=00a000a8;F0F8245F=00a000a9;E8F51C58=00a100a0;E9F51C57=00a100a1;D9FB174D=00a100a2;1AE30000=00a100a3;F000=00a100a3;F6DF174D=00a100a5;0000=00a100a1;E1F22B63=00a100a7;E7E70A5E=00a100a8;E6E70A5E=00a100a9;F8E20843=00a200a0;FCE10840=00a200a1;E9D20F56=00a200a2;F7E11149=00a200a3;B2A6C2C4=00a200a4;F3E01C52=00a200a5;E7DB184F=00a200a6;E7685F18=00a000a2;F3EB2552=00a000a3;FFEF093C=00a000a4;FFEF0939=00a000a4;FCF10D3D=00a000a6;F9F00E42=00a000a7;E8F61C58=00a000a7;0000=00a000a9;FFEF0938=00a100a0;4AA6E3D4=00a100a1;C7280E00=00a100a2;F3030000=00a100a3;41A7D4D4=00a200a7;F7D30024=00a200a8;EEE2174D=00a200a9;0000=00a100a5;0000=00a100a1;0000=00a100a7;0000=00a100a8;F2E50843=00a100a9;F5E40840=00a200a0;E5D3064F=00a200a1;F3E30841=00a200a2;F0E41149=00a200a3;0000=00a200a4;A4ABC2C4=00a200a5;ECE21C52=00a200a6;E3DB184F=00a200a6;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;391F29E2=0000;C1180000=0000;C1180000=0000;C2170000=0000;C2170000=0000;5A7FBD00=0000;6C8DC408=0000;FFE2E2E2=0000;4F3648E2=0000;391F29E2=0000;391F29E2=0000;391F29E2=0000;391F29E2=0000;391F29E2=0000;391F29E2=0000;391F29E2=0000;3B1C27E2=0000;3A1D28E2=0000;513547E2=0000;4E3143E2=0000;92ADD5E2=0000;4F3345E2=0000;574848E2=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F7E0124B=0000;FFE50925=0000;509FD9D4=0000;E2141C1C=0000;549DDDD4=0000;FFE50925=0000;F7EE1D4B=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000;F000=0000?scalenearest=2?blendscreen=/objects/outpost/customsign/signplaceholder.png?replace;0000=FFF0;01000000=FFF0;00000100=FFF0;01000100=FFF0;00a000a1=00010000;01a000a1=80010000;00a001a1=00018000;01a001a1=80018000;00a000a2=00020000;01a000a2=80020000;00a001a2=00028000;01a001a2=80028000;00a000a3=00030000;01a000a3=80030000;00a001a3=00038000;01a001a3=80038000;00a000a4=00040000;01a000a4=80040000;00a001a4=00048000;01a001a4=80048000;00a000a5=00050000;01a000a5=80050000;00a001a5=00058000;01a001a5=80058000;00a000a6=00060000;01a000a6=80060000;00a001a6=00068000;01a001a6=80068000;00a000a7=00070000;01a000a7=80070000;00a001a7=00078000;01a001a7=80078000;00a000a8=00080000;01a000a8=80080000;00a001a8=00088000;01a001a8=80088000;00a000a9=00090000;01a000a9=80090000;00a001a9=00098000;01a001a9=80098000;00a100a0=00100000;01a100a0=80100000;00a101a0=00108000;01a101a0=80108000;00a100a1=0100;01a100a1=80110000;00a101a1=00118000;01a101a1=80118000;00a100a2=00120000;01a100a2=80120000;00a101a2=00128000;01a101a2=80128000;00a100a3=00130000;01a100a3=80130000;00a101a3=00138000;01a101a3=80138000;00a100a4=00140000;01a100a4=80140000;00a101a4=00148000;01a101a4=80148000;00a100a5=00150000;01a100a5=80150000;00a101a5=00158000;01a101a5=80158000;00a100a6=00160000;01a100a6=80160000;00a101a6=00168000;01a101a6=80168000;00a100a7=00170000;01a100a7=80170000;00a101a7=00178000;01a101a7=80178000;00a100a8=00180000;01a100a8=80180000;00a101a8=00188000;01a101a8=80188000;00a100a9=00190000;01a100a9=80190000;00a101a9=00198000;01a101a9=80198000;00a200a0=00200000;01a200a0=80200000;00a201a0=00208000;01a201a0=80208000;00a200a1=00210000;01a200a1=80210000;00a201a1=00218000;01a201a1=80218000;00a200a2=0200;01a200a2=80220000;00a201a2=00228000;01a201a2=80228000;00a200a3=00230000;01a200a3=80230000;00a201a3=00238000;01a201a3=80238000;00a200a4=00240000;01a200a4=80240000;00a201a4=00248000;01a201a4=80248000;00a200a5=00250000;01a200a5=80250000;00a201a5=00258000;01a201a5=80258000;00a200a6=00260000;01a200a6=80260000;00a201a6=00268000;01a201a6=80268000;00a200a7=00270000;01a200a7=80270000;00a201a7=00278000;01a201a7=80278000;00a200a8=00280000;01a200a8=80280000;00a201a8=00288000;01a201a8=80288000;00a200a9=00290000;01a200a9=80290000;00a201a9=00298000;01a201a9=80298000?scale=128;128?crop=0;0;43;43";
+            
+            let palletes = "";
+            for(var key in FrameGreenIndex)
+            {
+                palletes += drawIndex(image, [43,43], parseInt(key,16), FrameGreenIndex[key]);
+            }
+
+            return directives + "?replace" + palletes;
+        }
+
+        function lerp(a,b,r)
+        {
+            return a+(b-a)*r;
+        }
+
+        var speed = 1/16;
+
+        var lastColor = [0, 212, 219];
+        var targetColor = [70, 112, 16];
+            
+        var current_lastColor = [0, 0, 0];
+        var current_targetColor = [0, 0, 0];
+
+        function tick()
+        {
+            current_lastColor = [lerp(current_lastColor[0], lastColor[0], speed), lerp(current_lastColor[1], lastColor[1], speed), lerp(current_lastColor[2], lastColor[2], speed)];
+            current_targetColor = [lerp(current_targetColor[0], targetColor[0], speed), lerp(current_targetColor[1], targetColor[1], speed), lerp(current_targetColor[2], targetColor[2], speed)];
+            document.body.style.backgroundImage = "linear-gradient(90deg, rgb("+current_targetColor[0]+","+current_targetColor[1]+","+current_targetColor[2]+"),rgb("+current_lastColor[0]+","+current_lastColor[1]+","+current_lastColor[2]+"))";
+        }
+
+        function tick2()
+        {
+            lastColor = targetColor;
+            targetColor = [Math.random() * 255, Math.random() * 255, Math.random() * 255];
+        }
+
+        tick();
+        tick2();
+
+        setInterval(tick2,5000);
+        setInterval(tick,64);
+
+    </script>
+</html> 
