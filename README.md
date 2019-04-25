@@ -1,7 +1,6 @@
 # Custom-Beam-Generator
-```
+
 https://rexmeck.github.io/Custom-Beam-Generator/
-```
 
 
 How apply
